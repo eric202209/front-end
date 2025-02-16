@@ -2,25 +2,33 @@ import logo from './logo.svg';
 import './App.css';
 import React, { useState } from "react";
 import DocumentList from "./components/DocumentList";
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 function App() {
   const [file, setFile] = useState(null);
   const [company, setCompany] = useState("");
   const [uploadResponse, setUploadResponse] = useState(null);
+  const [error, setError] = useState(null);
 
   const handleFileChange = (event) => {
-    setFile(event.target.files[0]);
+    const selectedFile = event.target.files[0];
+    if (selectedFile && selectedFile.type !== 'application/pdf') {
+      setError("Please select a PDF file");
+      setFile(null);
+    } else {
+      setError(null);
+      setFile(selectedFile);
+    }
   };
 
   const handleFileSelect = (document) => {
-    // When a document is selected from the list
     setCompany(document.company_name);
     handlePreprocess(document.file_url);
   };
 
   const handleUpload = async () => {
     if (!file || !company) {
-      alert("Please select a file and enter a company name.");
+      setError("Please select a file and enter a company name.");
       return;
     }
 
@@ -41,10 +49,10 @@ function App() {
         console.log("Upload successful:", data);
         handlePreprocess(data.file_url);
       } else {
-        console.error("Upload failed:", data);
+        setError("Upload failed: " + data.message);
       }
     } catch (error) {
-      console.error("Error uploading file:", error);
+      setError("Error uploading file: " + error.message);
     }
   };
 
@@ -58,8 +66,12 @@ function App() {
 
       const data = await response.json();
       console.log("Preprocessing response:", data);
+      
+      if (!response.ok) {
+        setError("Preprocessing failed: " + data.message);
+      }
     } catch (error) {
-      console.error("Error starting preprocessing:", error);
+      setError("Error starting preprocessing: " + error.message);
     }
   };
 
@@ -71,6 +83,13 @@ function App() {
         {/* Upload Form */}
         <div className="bg-white p-6 rounded-lg shadow-sm space-y-4">
           <h2 className="text-xl font-semibold">Upload New Document</h2>
+          
+          {error && (
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          )}
+          
           <div className="space-y-4">
             <input 
               type="text" 
@@ -82,11 +101,13 @@ function App() {
             <input 
               type="file" 
               onChange={handleFileChange}
+              accept=".pdf"
               className="w-full p-2 border rounded"
             />
             <button 
               onClick={handleUpload}
               className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700"
+              disabled={!file || !company}
             >
               Upload & Process
             </button>

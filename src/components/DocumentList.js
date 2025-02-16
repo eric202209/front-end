@@ -1,14 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { Download, Upload, RefreshCw } from 'lucide-react';
+import { Download, Upload, RefreshCw, FileWarning } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { Badge } from '@/components/ui/badge';
 
 const DocumentList = ({ onFileSelect }) => {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-  const [selectedFile, setSelectedFile] = useState(null);
 
   const fetchDocuments = async () => {
     setLoading(true);
@@ -50,7 +50,7 @@ const DocumentList = ({ onFileSelect }) => {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
+    <Card className="w-full max-w-4xl">
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-4">
         <CardTitle className="text-2xl font-bold">Document Repository</CardTitle>
         <Button 
@@ -70,21 +70,32 @@ const DocumentList = ({ onFileSelect }) => {
         )}
         
         <div className="rounded-md border">
-          <div className="grid grid-cols-6 gap-4 p-4 font-medium text-sm text-gray-500 bg-gray-50 rounded-t-md">
+          <div className="grid grid-cols-7 gap-4 p-4 font-medium text-sm text-gray-500 bg-gray-50 rounded-t-md">
             <div className="col-span-2">File Name</div>
             <div>Company</div>
             <div>Size</div>
             <div>Upload Date</div>
+            <div>Status</div>
             <div>Actions</div>
           </div>
           
           <div className="divide-y">
             {documents.map((doc, index) => (
-              <div key={index} className="grid grid-cols-6 gap-4 p-4 items-center hover:bg-gray-50">
-                <div className="col-span-2 font-medium">{doc.file_name}</div>
+              <div key={index} className="grid grid-cols-7 gap-4 p-4 items-center hover:bg-gray-50">
+                <div className="col-span-2 font-medium flex items-center">
+                  {doc.content_type !== 'application/pdf' && (
+                    <FileWarning className="h-4 w-4 text-yellow-500 mr-2" />
+                  )}
+                  {doc.file_name}
+                </div>
                 <div>{doc.company_name}</div>
                 <div>{formatFileSize(doc.size)}</div>
                 <div>{formatDate(doc.upload_date)}</div>
+                <div>
+                  <Badge variant={doc.processed === 'true' ? 'success' : 'secondary'}>
+                    {doc.processed === 'true' ? 'Processed' : 'Pending'}
+                  </Badge>
+                </div>
                 <div className="flex space-x-2">
                   <Button 
                     variant="outline" 
@@ -97,6 +108,7 @@ const DocumentList = ({ onFileSelect }) => {
                     variant="outline"
                     size="icon"
                     onClick={() => onFileSelect(doc)}
+                    disabled={doc.content_type !== 'application/pdf' || doc.processed === 'true'}
                   >
                     <Upload className="h-4 w-4" />
                   </Button>
